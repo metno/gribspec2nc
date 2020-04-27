@@ -90,11 +90,12 @@ PROGRAM gribspec2nc
    USE GRIB_API
    USE netcdf
    USE netcdf_metno_spec
+   use sphere_vec, only : spheredist
 
    IMPLICIT NONE
 
    ! Functions called
-   REAL :: spheredist
+  !  REAL :: spheredist
    REAL :: ang180
    REAL :: ang360
    INTEGER :: getclo
