@@ -90,7 +90,7 @@ PROGRAM gribspec2nc
    USE GRIB_API
    USE netcdf
    USE netcdf_metno_spec
-   use sphere_vec, only : spheredist
+   use sphere_vec, only : spheredist_vec
 
    IMPLICIT NONE
 
@@ -659,15 +659,14 @@ PROGRAM gribspec2nc
             miss = 0
             DO j = 1, nwish
 
-               ! Loop over grid points
-               DO ij = 1, numberofvalues
-                  ! Compute distance [km]
-                  dist(ij)=spheredist(xlon(ij),xlat(ij),lon(j),lat(j))/1000.0
-                  ! Set really close neighbours to min dist to avoid overflow
-                  IF (dist(ij) < TOL) THEN
-                     dist(ij) = TOL
-                  ENDIF
-               ENDDO ! ij = 1, numberofvalues
+              ! Loop over grid points
+              call spheredist_vec(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
+              dist = dist/1000.0
+              do ij= 1,numberofvalues
+                if(dist(ij) < TOL) then
+                  dist(ij) = TOL
+                end if
+              end do
 
                ! Find nearest neighbours
                DO i = 1, neighbours

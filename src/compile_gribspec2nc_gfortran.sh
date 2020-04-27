@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# FLAGS="-pg"
-FLAGS="-O2"
+# FLAGS="-O2 -pg"
+FLAGS="-O2 -mavx2"
 
 export GRIB_API_INCLUDE="-I/usr/local/include"
 export GRIB_API_LIB="-L/usr/local/lib -lgrib_api_f90 -lgrib_api"

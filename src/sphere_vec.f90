@@ -7,10 +7,9 @@ module sphere_vec
 
   real(kind=dbl), parameter :: pi     = acos(-1.0_dbl)
   real(kind=dbl), parameter :: halfpi = 0.5_dbl*pi
+  real(kind=dbl), parameter :: twopi  = 2.0_dbl*pi
   real(kind=dbl), parameter :: rad    = pi/180.0_dbl
   real(kind=dbl), parameter :: rEarth = 6371000.0_dbl
-
-  public :: spheredist, spherearcrad
 
 contains
 
@@ -26,18 +25,27 @@ contains
 ! See also spherearc.
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-real(kind=sng) function spheredist(lon1, lat1, lon2, lat2)
+subroutine spheredist_vec(lon1, lat1, lon2, lat2, dist, nelem)
 
   implicit none
 
-  real(kind=sng), intent(in) :: lon1 ! [deg]
-  real(kind=sng), intent(in) :: lat1 ! [deg]
-  real(kind=sng), intent(in) :: lon2 ! [deg]
-  real(kind=sng), intent(in) :: lat2 ! [deg]
+  real(kind=sng), intent(in)  :: lon1(nelem) ! [deg]
+  real(kind=sng), intent(in)  :: lat1(nelem) ! [deg]
+  real(kind=sng), intent(in)  :: lon2        ! [deg]
+  real(kind=sng), intent(in)  :: lat2        ! [deg]
+  real(kind=sng), intent(out) :: dist(nelem)
+  integer,        intent(in)  :: nelem
 
-  spheredist = real(spherearcrad(lon1*rad,lat1*rad,lon2*rad,lat2*rad)*rEarth,kind=sng)
+  integer i
+  real(kind=dbl) dTmp(nelem), lan2r, lat2r
 
-end function spheredist
+  lan2r = real(lon2,kind=dbl)*rad
+  lat2r = real(lat2,kind=dbl)*rad
+
+  call spherearcrad_vec(real(lon1,kind=dbl)*rad, real(lat1,kind=dbl)*rad, lan2r, lat2r, dTmp, nelem)
+  dist = real(dTmp*rEarth, kind=sng)
+
+end subroutine spheredist_vec
 
 !!!!! FUNCTION spherearcrad !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Returns the great circle (geodesic) distance measured in radians [0,PI)
@@ -54,39 +62,47 @@ end function spheredist
 !
 ! See also spherearc, spherearc2 and spherdist.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-real(kind=dbl) function spherearcrad(rlon1, rlat1, rlon2, rlat2)
+subroutine spherearcrad_vec(rlon1, rlat1, rlon2, rlat2, dist, nelem)
 
   implicit none
 
-  real(kind=dbl), intent(in) :: rlon1 ! [rad]
-  real(kind=dbl), intent(in) :: rlat1 ! [rad]
-  real(kind=dbl), intent(in) :: rlon2 ! [rad]
-  real(kind=dbl), intent(in) :: rlat2 ! [rad]
+  real(kind=dbl), intent(in)  :: rlon1(nelem) ! [rad]
+  real(kind=dbl), intent(in)  :: rlat1(nelem) ! [rad]
+  real(kind=dbl), intent(in)  :: rlon2        ! [rad]
+  real(kind=dbl), intent(in)  :: rlat2        ! [rad]
+  real(kind=dbl), intent(out) :: dist(nelem)  ! [rad]
+  integer,        intent(in)  :: nelem
 
-  real(kind=dbl) a, c, d, l1, l2
-  real(kind=dbl) x1, y1, z1, x2, y2, z2 ! Cartesian positions
+  integer i
 
-  l1 = angpi(rlon1)
-  a  = halfpi-rlat1
+  real(kind=dbl) a(nelem), d(nelem), l1(nelem), l2, l2c, l2s, s2
+  real(kind=dbl) x1(nelem), y1(nelem), z1(nelem), x2, y2, z2 ! Cartesian positions
 
-  l2 = angpi(rlon2)
-  c  = halfpi-rlat2
+  l2  = angpi(rlon2)
+  l2c = cos(l2)
+  l2s = sin(l2)
 
-  x1 = sin(a)*cos(l1) ! (x,y,z) of pos 1.
-  y1 = sin(a)*sin(l1)
-  z1 = cos(a)
+  ! (x,y,z) of pos 2.
+  s2 = sin(halfpi - rlat2)
+  z2 = cos(halfpi - rlat2)
+  x2 = s2*l2c
+  y2 = s2*l2s
 
-  x2 = sin(c)*cos(l2) ! (x,y,z) of pos 2.
-  y2 = sin(c)*sin(l2)
-  z2 = cos(c)
+  do i=1,nelem
+    l1(i) = angpi(rlon1(i))
+  end do
 
-  d = x1*x2 + y1*y2 + z1*z2
-  d = min( 1.0_dbl, d)
-  d = max(-1.0_dbl, d)
+  a(1:nelem)  = halfpi - rlat1(1:nelem)
+  x1(1:nelem) = sin(a(1:nelem))*cos(l1(1:nelem)) ! (x,y,z) of pos 1.
+  y1(1:nelem) = sin(a(1:nelem))*sin(l1(1:nelem))
+  z1(1:nelem) = cos(a(1:nelem))
 
-  spherearcrad = acos(d) ! Arc length [rad]
+  d(1:nelem) = x1(1:nelem)*x2 + y1(1:nelem)*y2 + z1(1:nelem)*z2
+  d(1:nelem) = min( 1.0_dbl, d(1:nelem))
+  d(1:nelem) = max(-1.0_dbl, d(1:nelem))
+  dist(1:nelem) = acos(d(1:nelem)) ! Arc length [rad]
 
-end function spherearcrad
+end subroutine spherearcrad_vec
 
 !!!!! FUNCTION angpi !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Maps arbitrary angle [rad] to [-PI, PI) [rad].
@@ -96,7 +112,7 @@ end function spherearcrad
 !
 ! 2001-08-15, Oyvind.Breivik@dnmi.no
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-real(kind=dbl) function angpi(ang)
+real(kind=dbl) pure function angpi(ang)
 
   implicit none
 
@@ -104,6 +120,7 @@ real(kind=dbl) function angpi(ang)
 
   angpi = ang2pi(ang)
   angpi = angpi - pi*(sign(1.0_dbl, angpi-pi) + 1.0_dbl)
+  ! angpi = modulo(ang+pi, twopi)-pi
 
 end function angpi
 
@@ -112,7 +129,7 @@ end function angpi
 !
 ! 2001-08-15, Oyvind.Breivik@dnmi.no
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-real(kind=dbl) function ang2pi(ang)
+real(kind=dbl) pure function ang2pi(ang)
 
   implicit none
 
