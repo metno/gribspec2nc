@@ -291,9 +291,9 @@ PROGRAM gribspec2nc
    CLOSE (IFSPECLIST)
 
    ALLOCATE (sumw(nwish))
-   ALLOCATE (idx(nwish,neighbours))
-   ALLOCATE (w(nwish,neighbours)) 
-   ALLOCATE (distmin(nwish,neighbours))
+   ALLOCATE (idx(neighbours,nwish))
+   ALLOCATE (w(neighbours,nwish)) 
+   ALLOCATE (distmin(neighbours,nwish))
    ALLOCATE (hm0(nwish,1))
    ALLOCATE (pdir(nwish,1))
    ALLOCATE (tpeak(nwish,1))
@@ -670,31 +670,31 @@ PROGRAM gribspec2nc
 
                ! Find nearest neighbours
                DO i = 1, neighbours
-                  distmin(j,i) = DISTMAX
+                  distmin(i,j) = DISTMAX
 
                   ! Loop over grid points
                   DO ij = 1, numberofvalues
-                     IF (dist(ij) < distmin(j,i)) THEN
-                        distmin(j,i) = dist(ij)
-                        idx(j,i) = ij
+                     IF (dist(ij) < distmin(i,j)) THEN
+                        distmin(i,j) = dist(ij)
+                        idx(i,j) = ij
                      ENDIF
                   ENDDO ! ij = 1, numberofvalues
 
                   ! Remove nearest spectral location from next search
-                  dist(idx(j,i)) = DISTMAX
+                  dist(idx(i,j)) = DISTMAX
                ENDDO ! i = 1, neighbours
 
                ! Compute weights
                i = 1
                sumw(j) = 0.0001
-               DO WHILE ((i<=neighbours) .AND. (distmin(j,i)<=dtresh))
-                  w(j,i) = distmin(j,i)**(-POW)
-                  sumw(j) = sumw(j) + w(j,i)
+               DO WHILE ((i<=neighbours) .AND. (distmin(i,j)<=dtresh))
+                  w(i,j) = distmin(i,j)**(-POW)
+                  sumw(j) = sumw(j) + w(i,j)
                   i = i+1
                ENDDO ! i; end while
 
                ! Flag loners
-               IF (distmin(j,1) > dtresh) THEN
+               IF (distmin(1,j) > dtresh) THEN
                   miss = miss+1
                   IF (itest>0) THEN
                      WRITE (*,"(a,i5,a,f11.6,a,f12.6)") "WARNING: No spectra within range for pos",j," at lat",lat(j),", lon",lon(j)
@@ -727,21 +727,21 @@ PROGRAM gribspec2nc
 
          ! Loop over nearest neighbours
          i = 1
-         DO WHILE ( i <= neighbours .AND. distmin(j,i) <= dtresh )
+         DO WHILE ( i <= neighbours .AND. distmin(i,j) <= dtresh )
             ! Grid index
-            ij = idx(j,i)
+            ij = idx(i,j)
 
             ! Spectral component weights
             DO m = 1, nfre
                DO k = 1, nang
-                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(j,i)
+                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(i,j)
                ENDDO
             ENDDO
             i = i+1
          ENDDO ! while i
 
          ! Divide spectrum by sum of weights and compute scalars of those within range
-         IF (distmin(j,1) <= dtresh) THEN
+         IF (distmin(1,j) <= dtresh) THEN
 
             ! Divide spectrum by sum of weights
             spw(:,:) = spw(:,:)/sumw(j)
@@ -822,7 +822,7 @@ PROGRAM gribspec2nc
          ENDIF ! distmin <= dtresh
 
          ! Write spectrum if location is within range or lnullspec is true
-         IF ( (distmin(j,1) <= dtresh) .OR. lnullspec) THEN
+         IF ( (distmin(1,j) <= dtresh) .OR. lnullspec) THEN
             CALL nc_write_spec(1,spw,itstep,j,ideldo)
          ENDIF ! ( (distmin(j,1) <= dtresh) .OR. lnullspec)
       ENDDO ! j = 1, nwish
