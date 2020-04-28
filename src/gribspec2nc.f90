@@ -657,16 +657,17 @@ PROGRAM gribspec2nc
          IF (.NOT. llexistweights) THEN
             ! Loop over wishlist
             miss = 0
-            DO j = 1, nwish
+            do j=1,nwish
 
               ! Loop over grid points
               call spheredist(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
               dist = dist/1000.0
-              do ij= 1,numberofvalues
-                if(dist(ij) < TOL) then
-                  dist(ij) = TOL
-                end if
-              end do
+              dist(1:numberofvalues) = max(dist(1:numberofvalues), TOL)
+              ! do ij= 1,numberofvalues
+              !   if(dist(ij) < TOL) then
+              !     dist(ij) = TOL
+              !   end if
+              ! end do
 
                ! Find nearest neighbours
                DO i = 1, neighbours
