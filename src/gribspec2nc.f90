@@ -875,7 +875,7 @@ END PROGRAM gribspec2nc
 
 !#######################################################################
 FUNCTION getclo(yaoptions, yaargument)
-   INTEGER getclo, getcla, my_rtb
+   INTEGER getclo, getcla
    CHARACTER*   1 yolastarg
    CHARACTER* (*) yaoptions, yaargument
    CHARACTER* 120 arg
@@ -886,9 +886,9 @@ FUNCTION getclo(yaoptions, yaargument)
 
    arg=' '
    CALL getarg(here,arg)
-   iol=my_rtb(arg)
+   iol = len_trim(arg)
    IF (iol == 2 .AND. arg(1:1) == '-' .AND. ivarg == 0 ) THEN
-      iol = my_rtb(yaoptions)
+      iol = len_trim(yaoptions)
       DO jl = 1, iol
          getclo = 0
          IF ( yaoptions(jl:jl) .EQ. arg(2:2) ) THEN
@@ -933,53 +933,6 @@ FUNCTION getclo(yaoptions, yaargument)
       ivarg=0
    !-->  PRINT*,' getcla in getcla ', getcla
 
-   RETURN
-END
-
-INTEGER FUNCTION MY_RTB (CHAR)
-!
-!---->
-!*
-!*    NAME      : MY_RTB
-!*
-!*    FUNCTION  : COUNT THE NUMBER OF CHARACTERS IN A CHARACTER
-!*                STRING, EXCLUDING TRAILING SPACES.
-!*
-!*    INPUT     : CHAR - CHARACTER STRING
-!*
-!*    OUTPUT    : MY_RTB  - NO OF CHARACTERS
-!*
-!*    GENERAL   : MY_RTB CALLS  -----
-!*
-!*    AUTHOR    : J.HENNESSY  15.4.85
-!*
-!     ---------------------------------------------------------------
-!----<
-!
-   CHARACTER*(*) CHAR
-!
-   j = LEN(char)
-!
-!     No trailing blanks.
-!
-   IF (char(j:j) /= ' ') THEN
-      my_rtb = j
-      RETURN
-   ENDIF
-!
-!     String with trailing blanks.
-!
-   DO I = J,1,-1
-      IF (CHAR(I:I).NE.' ') THEN
-         MY_RTB = I
-         RETURN
-      ENDIF
-   ENDDO
-!
-!     String consists of only blanks.
-!
-   MY_RTB = 0
-!
    RETURN
 END
 
