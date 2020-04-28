@@ -90,7 +90,7 @@ PROGRAM gribspec2nc
    USE GRIB_API
    USE netcdf
    USE netcdf_metno_spec
-   use sphere_vec, only : spheredist_vec
+   use sphere_vec, only : spheredist
 
    IMPLICIT NONE
 
@@ -660,7 +660,7 @@ PROGRAM gribspec2nc
             DO j = 1, nwish
 
               ! Loop over grid points
-              call spheredist_vec(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
+              call spheredist(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
               dist = dist/1000.0
               do ij= 1,numberofvalues
                 if(dist(ij) < TOL) then
