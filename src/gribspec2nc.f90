@@ -291,9 +291,9 @@ PROGRAM gribspec2nc
    CLOSE (IFSPECLIST)
 
    ALLOCATE (sumw(nwish))
-   ALLOCATE (idx(neighbours,nwish))
-   ALLOCATE (w(neighbours,nwish))
-   ALLOCATE (distmin(neighbours,nwish))
+   ALLOCATE (idx(nwish,neighbours))
+   ALLOCATE (w(nwish,neighbours))
+   ALLOCATE (distmin(nwish,neighbours))
    ALLOCATE (hm0(nwish,1))
    ALLOCATE (pdir(nwish,1))
    ALLOCATE (tpeak(nwish,1))
@@ -659,43 +659,38 @@ PROGRAM gribspec2nc
             miss = 0
             do j=1,nwish
 
-              ! Loop over grid points
-              call spheredist(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
-              dist = dist/1000.0
-              dist(1:numberofvalues) = max(dist(1:numberofvalues), TOL)
-              ! do ij= 1,numberofvalues
-              !   if(dist(ij) < TOL) then
-              !     dist(ij) = TOL
-              !   end if
-              ! end do
+               ! Loop over grid points
+               call spheredist(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
+               dist = dist/1000.0
+               dist(1:numberofvalues) = max(dist(1:numberofvalues), TOL)
 
                ! Find nearest neighbours
                DO i = 1, neighbours
-                  distmin(i,j) = DISTMAX
+                  distmin(j,i) = DISTMAX
 
                   ! Loop over grid points
                   DO ij = 1, numberofvalues
-                     IF (dist(ij) < distmin(i,j)) THEN
-                        distmin(i,j) = dist(ij)
-                        idx(i,j) = ij
+                     IF (dist(ij) < distmin(j,i)) THEN
+                        distmin(j,i) = dist(ij)
+                        idx(j,i) = ij
                      ENDIF
                   ENDDO ! ij = 1, numberofvalues
 
                   ! Remove nearest spectral location from next search
-                  dist(idx(i,j)) = DISTMAX
+                  dist(idx(j,i)) = DISTMAX
                ENDDO ! i = 1, neighbours
 
                ! Compute weights
                i = 1
                sumw(j) = 0.0001
-               DO WHILE ((i<=neighbours) .AND. (distmin(i,j)<=dtresh))
-                  w(i,j) = distmin(i,j)**(-POW)
-                  sumw(j) = sumw(j) + w(i,j)
+               DO WHILE ((i<=neighbours) .AND. (distmin(j,i)<=dtresh))
+                  w(j,i) = distmin(j,i)**(-POW)
+                  sumw(j) = sumw(j) + w(j,i)
                   i = i+1
                ENDDO ! i; end while
 
                ! Flag loners
-               IF (distmin(1,j) > dtresh) THEN
+               IF (distmin(j,1) > dtresh) THEN
                   miss = miss+1
                   IF (itest>0) THEN
                      WRITE (*,"(a,i5,a,f11.6,a,f12.6)") "WARNING: No spectra within range for pos",j," at lat",lat(j),", lon",lon(j)
@@ -728,21 +723,21 @@ PROGRAM gribspec2nc
 
          ! Loop over nearest neighbours
          i = 1
-         DO WHILE ( i <= neighbours .AND. distmin(i,j) <= dtresh )
+         DO WHILE ( i <= neighbours .AND. distmin(j,i) <= dtresh )
             ! Grid index
-            ij = idx(i,j)
+            ij = idx(j,i)
 
             ! Spectral component weights
             DO m = 1, nfre
                DO k = 1, nang
-                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(i,j)
+                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(j,i)
                ENDDO
             ENDDO
             i = i+1
          ENDDO ! while i
 
          ! Divide spectrum by sum of weights and compute scalars of those within range
-         IF (distmin(1,j) <= dtresh) THEN
+         IF (distmin(j,1) <= dtresh) THEN
 
             ! Divide spectrum by sum of weights
             spw(:,:) = spw(:,:)/sumw(j)
@@ -823,7 +818,7 @@ PROGRAM gribspec2nc
          ENDIF ! distmin <= dtresh
 
          ! Write spectrum if location is within range or lnullspec is true
-         IF ( (distmin(1,j) <= dtresh) .OR. lnullspec) THEN
+         IF ( (distmin(j,1) <= dtresh) .OR. lnullspec) THEN
             CALL nc_write_spec(1,spw,itstep,j,ideldo)
          ENDIF ! ( (distmin(j,1) <= dtresh) .OR. lnullspec)
       ENDDO ! j = 1, nwish
