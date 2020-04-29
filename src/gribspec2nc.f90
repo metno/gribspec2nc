@@ -91,6 +91,7 @@ PROGRAM gribspec2nc
    USE netcdf
    USE netcdf_metno_spec
    use sphere_vec, only : spheredist
+   use debug_utils
 
    IMPLICIT NONE
 
@@ -161,16 +162,16 @@ PROGRAM gribspec2nc
 
    LOGICAL, DIMENSION(NOUT_S) :: CFLAG_S    !! COMPUTATION FLAG.
 
-   CHARACTER*1  :: CLOPTLET
-   CHARACTER*3  :: CLL1
-   CHARACTER*16 :: CLOPTS
-   CHARACTER*8  :: CSTEPUNITS
-   CHARACTER*8  :: CSTEPTYPE
-   CHARACTER*12 :: CGRIDTYPE
-   CHARACTER*12 :: CLFMT
-   CHARACTER*128:: clarg, fnamein, fnameout, fspeclist, fweights
-   CHARACTER*256:: str
-   CHARACTER (LEN=14) :: cdatea, cdate0="first", cdatef    !! START DATE OF PRINT OUPUT  (YYYYMMDDHHMMSS).
+   CHARACTER(len=1)   :: CLOPTLET
+   CHARACTER(len=3)   :: CLL1
+   CHARACTER(len=16)  :: CLOPTS
+   CHARACTER(len=8)   :: CSTEPUNITS
+   CHARACTER(len=8)   :: CSTEPTYPE
+   CHARACTER(len=12)  :: CGRIDTYPE
+   CHARACTER(len=12)  :: CLFMT
+   CHARACTER(len=128) :: clarg, fnamein, fnameout, fspeclist, fweights
+   CHARACTER(len=256) :: str
+   CHARACTER(len=14)  :: cdatea, cdate0="first", cdatef    !! START DATE OF PRINT OUPUT  (YYYYMMDDHHMMSS).
 
    ! Allocatables
    INTEGER, DIMENSION(:), ALLOCATABLE :: pl
@@ -203,6 +204,9 @@ PROGRAM gribspec2nc
    fweights=' '
    itest=0
    iu06=6
+
+   ! DEBUG flag
+   debug_enableTimeStamps = .true.
 
    CMDLINE: DO
       IOPTVAL=GETCLO(CLOPTS,CLARG)
@@ -241,6 +245,7 @@ PROGRAM gribspec2nc
 
    ENDDO CMDLINE
 
+   call echoTimeStamp("init")
 
 !*    OPEN ASCII SPECTRAL LOCATION FILE AND READ WISH LIST
 !     ----------------------------------------------------
@@ -316,6 +321,7 @@ PROGRAM gribspec2nc
       WRITE(*,*)'****************************'
       CALL ABORT
    ENDIF
+   call echoTimeStamp("data loaded")
 
 !  GET FIRST DATA FILE
 !  LOOP ON ALL MESSAGES IN INPUT FILE
@@ -326,6 +332,7 @@ PROGRAM gribspec2nc
    LOOP: DO WHILE (iret /= grib_end_of_file)
 
       !* DETERMINE DATA FIELD CHARACTERISTICS
+      call echoTimeStamp("start loop")
 
       CALL grib_get(igrib, 'paramId', itabpar)
       itable=itabpar/1000
@@ -587,6 +594,8 @@ PROGRAM gribspec2nc
          ENDDO ! nfre
       ENDIF ! param 250 or 251
 
+      call echoTimeStamp("loop after grib")
+
      ! Initialize weights etc. Only once
 
       IF (lfirst) THEN
@@ -708,6 +717,7 @@ PROGRAM gribspec2nc
 
          lfirst = .FALSE.
 
+         call echoTimeStamp("loop after weights")
       ENDIF ! lfirst
 
      !!! Interpolate spectra to list of locations
@@ -827,6 +837,7 @@ PROGRAM gribspec2nc
          CALL nc_write_intpar(5,tpeak,itstep,ideldo)
          CALL nc_write_intpar(6,pdir,itstep,ideldo)
       ENDIF ! lextras
+      call echoTimeStamp("loop after wish")
 
       CALL grib_release(igrib)
       igrib=-99
@@ -866,6 +877,8 @@ PROGRAM gribspec2nc
    IF (ALLOCATED(hm0)) DEALLOCATE (hm0)
    IF (ALLOCATED(pdir)) DEALLOCATE (pdir)
    IF (ALLOCATED(tpeak)) DEALLOCATE (tpeak)
+
+   call echoTimeStamp("end")
 
 END PROGRAM gribspec2nc
 
