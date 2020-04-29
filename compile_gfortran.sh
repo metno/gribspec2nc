@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# FLAGS="-O2 -pg"
-FLAGS="-O2 -mavx2"
+FLAGS="-O2 -mavx2 -m64 -march=native"
+# FLAGS="$FLAGS -pg"
 
 if [ ! -d build ]; then
     mkdir build

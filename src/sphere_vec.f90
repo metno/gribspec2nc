@@ -1,3 +1,14 @@
+
+! ============================================================================ !
+!
+! Computations are done in double precision, I/O in single precision.
+!
+! 2001-08-23, Oyvind.Breivik@dnmi.no
+! 2020-08-28, Veronica.Berglyd.Olsen@met.no :
+!             Added vectorised versions and improved performance
+!
+! ============================================================================ !
+
 module sphere_vec
 
   use, intrinsic :: iso_fortran_env, only : real32, real64
@@ -30,7 +41,7 @@ module sphere_vec
 
 contains
 
-! === FUNCTION spheredist ==================================================== !
+! === SUBROUTINE spheredist ================================================== !
 ! Returns the great circle (geodesic) distance measured in meters
 ! between positions (lon1,lat1) and (lon2,lat2) [deg].
 !
@@ -79,7 +90,7 @@ subroutine spheredist_vector(lon1, lat1, lon2, lat2, dist, nelem)
 
 end subroutine spheredist_vector
 
-! === FUNCTION spherearcrad ================================================== !
+! === SUBROUTINE spherearcrad ================================================ !
 ! Returns the great circle (geodesic) distance measured in radians [0,PI)
 ! between positions (rlon1,rlat1) and (rlon2,rlat2) [rad].
 !
@@ -148,9 +159,10 @@ subroutine spherearcrad_vector(rlon1, rlat1, rlon2, rlat2, dist, nelem)
   x2 = s2*cos(rlon2)
   y2 = s2*sin(rlon2)
 
+  ! (x,y,z) of pos 1.
   as(1:nelem) = sin(halfpi - rlat1(1:nelem))
   z1(1:nelem) = cos(halfpi - rlat1(1:nelem))
-  x1(1:nelem) = as(1:nelem)*cos(rlon1(1:nelem)) ! (x,y,z) of pos 1.
+  x1(1:nelem) = as(1:nelem)*cos(rlon1(1:nelem))
   y1(1:nelem) = as(1:nelem)*sin(rlon1(1:nelem))
 
   d(1:nelem) = x1(1:nelem)*x2 + y1(1:nelem)*y2 + z1(1:nelem)*z2
@@ -169,7 +181,7 @@ end subroutine spherearcrad_vector
 ! ============================================================================ !
 real(kind=dbl) pure function angpi(ang)
   real(kind=dbl), intent(in) :: ang ! [rad]
-  angpi = modulo(ang+pi, twopi)-pi
+  angpi = modulo(ang + pi, twopi) - pi
 end function angpi
 
 ! === FUNCTION ang2pi ======================================================== !
