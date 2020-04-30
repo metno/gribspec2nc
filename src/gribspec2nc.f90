@@ -1182,7 +1182,6 @@ END SUBROUTINE ADJUST
             ENDDO
          END IF
       ELSE IF (IMIN.LT.0) THEN
-
 !     2.2 NEGATIVE SHIFT.
 
          IHOUR = IHOUR + (IMIN-59)/60
