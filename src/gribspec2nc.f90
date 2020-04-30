@@ -22,7 +22,7 @@ PROGRAM gribspec2nc
 !               -x: compute integrated parameters
 !               -d timestep_hh: specify temporal resolution, default is 1 h
 !               -i infile: GRIB input, default is input_spectra
-!               -l speclist.inp: list of spectral locations to interpolate to, 
+!               -l speclist.inp: list of spectral locations to interpolate to,
 !                           default is speclist.inp
 !               -o outfile: NetCDF output, default is output_spectra.nc
 !               -w weightfile: Use precomputed interpolation weights, default is no
@@ -43,7 +43,7 @@ PROGRAM gribspec2nc
 !
 !     LIBRARY : FORTRAN90, GRIBAPI
 !     -------
-!     COMPILE: 
+!     COMPILE:
 !     export NETCDF4_DIR="/opt/netcdf-fortran-4.2"
 !     export NETCDF_INCLUDE="-I$NETCDF4_DIR/include"
 !     export NETCDF_LIB="-L$NETCDF4_DIR/lib -lnetcdff"
@@ -58,7 +58,7 @@ PROGRAM gribspec2nc
 !     ECMWF:
 !     module load netcdf4
 !     gfortran gribspec2nc.f90 sphere.f netcdf_metno_spec.f90 $NETCDF_INCLUDE $NETCDF_LIB $GRIB_API_INCLUDE $GRIB_API_LIB -o gribspec2nc
-! 
+!
 !     Run:
 !     gribspec2nc -i input_spectra -l speclist.inp -o output_spectra.nc
 !     gribspec2nc -x -i ../Src/ifs_spectra_an.20150802.grb -l ifs_spectra_list.inp -w ifs_weights.bin -o ifs_spectra_an.20150802.nc
@@ -69,10 +69,10 @@ PROGRAM gribspec2nc
 !     ERA-Interim file:
 !     gribspec2nc -x -d 6 -i /metno/hindcast3/oyvindb/Sea_of_Japan//erai_soj_spectra_20140101-20140115.grb -l newinvsJapan.inp -o erai_spectra_soj.20140101-20140115.nc
 !     gribspec2nc -d 6 -x -i ~/Data/Mdata/Spec/erai_soj_spectra_201401.grb -l newinvsJapan.inp -o ~/Data/Mdata/Spec/erai_spectra_soj.201401.nc
-!     COMPILE: 
+!     COMPILE:
 !     gfortran gribspec2nc.f90 sphere.f netcdf_metno_spec.f90 $NETCDF_INCLUDE -L/opt/netcdf-fortran-4.2/lib -lnetcdff $GRIB_API_INCLUDE $GRIB_API_LIB -o gribspec2nc
 !
-! 
+!
 !     Run:
 !     gribspec2nc -i input_spectra -l speclist.inp -o output_spectra.nc
 !     gribspec2nc -x -i ../Src/ifs_spectra_an.20150802.grb -l ifs_spectra_list.inp -w ifs_weights.bin -o ifs_spectra_an.20150802.nc
@@ -80,8 +80,8 @@ PROGRAM gribspec2nc
 !     gribspec2nc -d 1 -x -i ~/Data/Mdata/Spec/ifs_spectra_wam4.20160111_an.grb -l invdist_MYWAVE4.inp -w ifs_weights_wam4.bin -o ifs_spectra_an_wam4.nc
 !     Forecast file:
 !     gribspec2nc -d 1 -x -i ~/Data/Mdata/Spec/ifs_spectra.20160110_fc.grb -l ifs_spectra_list.inp -w ifs_weights.bin -o ifs_spectra_fc.nc
-! 
-!              
+!
+!
 !     MARS REQUEST EXAMPLE:
 !     -----------------------
 
@@ -90,11 +90,14 @@ PROGRAM gribspec2nc
    USE GRIB_API
    USE netcdf
    USE netcdf_metno_spec
+   use sphere_vec, only : spheredist
+   use, intrinsic :: iso_fortran_env, only : output_unit
+   use debug_utils
 
    IMPLICIT NONE
 
    ! Functions called
-   REAL :: spheredist
+  !  REAL :: spheredist
    REAL :: ang180
    REAL :: ang360
    INTEGER :: getclo
@@ -116,8 +119,8 @@ PROGRAM gribspec2nc
    INTEGER, PARAMETER :: IFWEIGHTS = 23
 
    ! Vars
-   INTEGER :: morarg, iu06
-   INTEGER :: i1, itest, lfile
+   INTEGER :: morarg, iu06, wFmt
+   INTEGER :: i1, itest
    INTEGER :: itabpar, iparam, itable, irgg, iscan
    INTEGER :: iyyyymmdd, ihhmm, ihh, imm, idd, iyyyy, imi, ihha, ihh0
    INTEGER :: jday0, jdaya
@@ -160,16 +163,16 @@ PROGRAM gribspec2nc
 
    LOGICAL, DIMENSION(NOUT_S) :: CFLAG_S    !! COMPUTATION FLAG.
 
-   CHARACTER*1  :: CLOPTLET
-   CHARACTER*3  :: CLL1
-   CHARACTER*16 :: CLOPTS
-   CHARACTER*8  :: CSTEPUNITS
-   CHARACTER*8  :: CSTEPTYPE
-   CHARACTER*12 :: CGRIDTYPE
-   CHARACTER*12 :: CLFMT
-   CHARACTER*128:: clarg, fnamein, fnameout, fspeclist, fweights
-   CHARACTER*256:: str
-   CHARACTER (LEN=14) :: cdatea, cdate0="first", cdatef    !! START DATE OF PRINT OUPUT  (YYYYMMDDHHMMSS).
+   CHARACTER(len=1)   :: CLOPTLET
+   CHARACTER(len=3)   :: CLL1
+   CHARACTER(len=16)  :: CLOPTS
+   CHARACTER(len=8)   :: CSTEPUNITS
+   CHARACTER(len=8)   :: CSTEPTYPE
+   CHARACTER(len=12)  :: CGRIDTYPE
+   CHARACTER(len=12)  :: CLFMT
+   CHARACTER(len=128) :: clarg, fnamein, fnameout, fspeclist, fweights
+   CHARACTER(len=256) :: str
+   CHARACTER(len=14)  :: cdatea, cdate0="first", cdatef    !! START DATE OF PRINT OUPUT  (YYYYMMDDHHMMSS).
 
    ! Allocatables
    INTEGER, DIMENSION(:), ALLOCATABLE :: pl
@@ -177,7 +180,7 @@ PROGRAM gribspec2nc
    INTEGER, ALLOCATABLE :: idx(:,:)
 
    REAL(KIND=8), ALLOCATABLE :: values(:)
-   REAL, ALLOCATABLE :: spec(:) 
+   REAL, ALLOCATABLE :: spec(:)
    REAL, ALLOCATABLE :: scfr(:), scth(:), esumth(:), esumfr(:)
    REAL, ALLOCATABLE :: dfim(:), fr(:), theta(:)
    REAL, ALLOCATABLE :: xlon(:), xlat(:), lon(:), lat(:)
@@ -196,12 +199,15 @@ PROGRAM gribspec2nc
 !*    INITIAL VALUES SET AND CRACK COMMAND LINE.
 !     -----------------------------------------
 
-   fnamein='input_spectra'
-   fnameout='output_spectra.nc'
-   fspeclist='speclist.inp'
-   fweights=' '
-   itest=0
-   iu06=6
+   fnamein   = 'input_spectra'
+   fnameout  = 'output_spectra.nc'
+   fspeclist = 'speclist.inp'
+   fweights  = ' '
+   itest = 0
+   iu06  = output_unit ! Usually unit 6
+
+   ! DEBUG flag to print timing information
+   debug_enableTimeStamps = .false.
 
    CMDLINE: DO
       IOPTVAL=GETCLO(CLOPTS,CLARG)
@@ -240,12 +246,11 @@ PROGRAM gribspec2nc
 
    ENDDO CMDLINE
 
- 
+   call echoTimeStamp("init")
+
 !*    OPEN ASCII SPECTRAL LOCATION FILE AND READ WISH LIST
 !     ----------------------------------------------------
-   LFILE=0
-   IF (fspeclist.NE. ' ') LFILE=LEN_TRIM(fspeclist)
-   OPEN (IFSPECLIST, FILE=fspeclist(1:LFILE), form="formatted")
+   open(ifspeclist, file=trim(fspeclist), form="formatted")
 
    ! Count number of desired locations
    READ (IFSPECLIST, "(a)", iostat=ios) str
@@ -271,7 +276,7 @@ PROGRAM gribspec2nc
       c = str(1:1)
       ! List may contain comments, first character must be c, *, ! or #
       IF ( c/='c' .AND. c/='*' .AND. c/='!' .AND. c/='#') THEN
-         ! First line contains 
+         ! First line contains
          ! dtresh - treshold [km] distance to neighbours and
          ! neighbours - max number of neighbours used for interpolation
          IF (j == 0) THEN
@@ -290,46 +295,46 @@ PROGRAM gribspec2nc
    CLOSE (IFSPECLIST)
 
    ALLOCATE (sumw(nwish))
-   ALLOCATE (idx(nwish,neighbours))
-   ALLOCATE (w(nwish,neighbours)) 
-   ALLOCATE (distmin(nwish,neighbours))
+   ALLOCATE (idx(neighbours,nwish))
+   ALLOCATE (w(neighbours,nwish))
+   ALLOCATE (distmin(neighbours,nwish))
    ALLOCATE (hm0(nwish,1))
    ALLOCATE (pdir(nwish,1))
    ALLOCATE (tpeak(nwish,1))
 
-!*    OPEN DATA FILE
-!     --------------
-   lfile=0
-   llexist=.FALSE.
-   IF (fnamein /= ' ') lfile=LEN_TRIM(fnamein)
-   INQUIRE (FILE=fnamein(1:lfile), EXIST=llexist)
-   IF (llexist) THEN
-      CALL grib_open_file(ifile,fnamein(1:lfile),'r')
-   ELSE
-      WRITE(*,*)'****************************'
-      WRITE(*,*)'*                          *'
-      WRITE(*,*)'*GRIB DATA NOT FOUND IN *'
-      WRITE(*,*)  FNAMEIN 
-      WRITE(*,*)'*PROGRAM WILL ABORT        *'
-      WRITE(*,*)'*                          *'
-      WRITE(*,*)'****************************'
-      CALL ABORT
-   ENDIF
+   ! OPEN DATA FILE
+   ! --------------
+   llexist = .false.
+   inquire(file=trim(fnamein), exist=llexist)
+   if(llexist) then
+      call grib_open_file(ifile, trim(fnamein), 'r')
+   else
+      write(*,*)'****************************'
+      write(*,*)'*                          *'
+      write(*,*)'* GRIB DATA NOT FOUND IN   *'
+      write(*,*)"  '"//trim(FNAMEIN)//"'"
+      write(*,*)'* PROGRAM WILL ABORT       *'
+      write(*,*)'*                          *'
+      write(*,*)'****************************'
+      call abort
+   end if
+   call echoTimeStamp("data loaded")
 
 !  GET FIRST DATA FILE
 !  LOOP ON ALL MESSAGES IN INPUT FILE
- 
+
    igrib=-99
    CALL grib_new_from_file(ifile,igrib,iret)
 
    LOOP: DO WHILE (iret /= grib_end_of_file)
 
-      !* DETERMINE DATA FIELD CHARACTERISTICS 
+      !* DETERMINE DATA FIELD CHARACTERISTICS
+      call echoTimeStamp("start loop")
 
       CALL grib_get(igrib, 'paramId', itabpar)
       itable=itabpar/1000
       iparam=itabpar-itable*1000
-      IF (itest>0) WRITE (*,*) ' THE INPUT PARAMETER IS ', iparam 
+      IF (itest>0) WRITE (*,*) ' THE INPUT PARAMETER IS ', iparam
 
       CALL grib_get(igrib,'gridType', cgridtype)
       IF (cgridtype(1:7) == 'regular') THEN
@@ -339,7 +344,7 @@ PROGRAM gribspec2nc
       ELSE
          WRITE(IU06,*) '***********************************'
          WRITE(IU06,*) '*  GRID TYPE NOT RECOGNIZED !!!'
-         WRITE(IU06,*) '   gridType = ', CGRIDTYPE 
+         WRITE(IU06,*) '   gridType = ', CGRIDTYPE
          WRITE(IU06,*) '***********************************'
          CALL ABORT
       ENDIF
@@ -352,7 +357,7 @@ PROGRAM gribspec2nc
       ELSE
          WRITE (IU06,*) '***********************************'
          WRITE (IU06,*) '*  SCANNING MODE NOT RECOGNIZED !!!'
-         WRITE (IU06,*) ' ISCAN = ', ISCAN 
+         WRITE (IU06,*) ' ISCAN = ', ISCAN
          WRITE (IU06,*) '***********************************'
          CALL ABORT
       ENDIF
@@ -361,11 +366,11 @@ PROGRAM gribspec2nc
       CALL grib_get(igrib,'latitudeOfLastGridPointInDegrees',ylast)
 
       IF (llscanns) THEN
-         amonop = yfrst 
-         amosop = ylast 
+         amonop = yfrst
+         amosop = ylast
       ELSE
-         amonop = ylast 
-         amosop = yfrst 
+         amonop = ylast
+         amosop = yfrst
       ENDIF
 
       CALL grib_get(igrib,'longitudeOfFirstGridPointInDegrees',amowep)
@@ -450,18 +455,18 @@ PROGRAM gribspec2nc
       ENDIF
       print *, "jdaya jday0 ihha ihh0", jdaya,jday0,ihha,ihh0
       itstep = NINT(3600*REAL(24*(jdaya-jday0)+ihha-ihh0)/ideldo)
-      
-      
+
+
       ! Compare cdatea, date inferred from GRIB file to cdatef, the date inferred assuming a constant time step ideldo
       IF (cdatea /= cdatef) THEN
-          IF (lstrict) THEN
-             print *, "Gribspec2nc: Error: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
-             print *, "Gribspec2nc: Aborting"
-             STOP
-          ELSE
-             print *, "Gribspec2nc: Warning: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
-          ENDIF
-          print *, "istep, itstep ", istep, itstep
+         IF (lstrict) THEN
+            print *, "Gribspec2nc: Error: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
+            print *, "Gribspec2nc: Aborting"
+            STOP
+         ELSE
+            print *, "Gribspec2nc: Warning: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
+         ENDIF
+         print *, "istep, itstep ", istep, itstep
       ENDIF
       CALL incdate(cdatef, ideldo)
 
@@ -473,7 +478,7 @@ PROGRAM gribspec2nc
          CALL grib_get(igrib,'numberOfDirections',nang)
          CALL grib_get(igrib,'numberOfFrequencies',nfre)
       ELSE
-         WRITE(*,*) 'THE INPUT GRIB PARAMETER IS NOT 250 OR 251 BUT', IPARAM 
+         WRITE(*,*) 'THE INPUT GRIB PARAMETER IS NOT 250 OR 251 BUT', IPARAM
          WRITE(*,*) 'WHICH IS NOT A WAVE SPECTRUM PARAMETER !!!'
          WRITE(*,*) 'PROGRAM WILL ABORT'
          CALL ABORT
@@ -492,6 +497,8 @@ PROGRAM gribspec2nc
       ENDIF
 
       delth = ZPI/nang
+
+      call echoTimeStamp("loop after grib")
 
  !       DECODE INPUT GRIB DATA
  !       ----------------------
@@ -533,7 +540,7 @@ PROGRAM gribspec2nc
     !          GET DATA VALUES
                CALL grib_get(igrib,'values',values)
 
-    !          DETERMINE DATA FIELD CHARACTERISTICS 
+    !          DETERMINE DATA FIELD CHARACTERISTICS
 
                CALL grib_get(igrib,'directionNumber',kk)
                CALL grib_get(igrib,'directionScalingFactor',idirscaling)
@@ -565,7 +572,7 @@ PROGRAM gribspec2nc
                      EXIT
                   ENDIF
                ENDDO
-               IF (llresetmissing) values=zmiss 
+               IF (llresetmissing) values=zmiss
 
                DO ij = 1, numberofvalues
                   IF (VALUES(IJ) /= ZMISS) THEN
@@ -586,14 +593,15 @@ PROGRAM gribspec2nc
          ENDDO ! nfre
       ENDIF ! param 250 or 251
 
-     ! Initialize weights etc. Only once
+      call echoTimeStamp("loop after decode")
 
+      ! Initialize weights etc. Only once
       IF (lfirst) THEN
          !*    OPEN NetCDF OUTPUT FILE
          !     ---------------------------------------
-         CALL nc_open_specfile(fnameout, cdatea, cflag_s, lon, lat, fr, theta, ideldo)
-         print *, "cdatea = ",cdatea
-         WRITE (iu06,*) ' +++ NetCDF file opened ', trim(fnameout)
+         call nc_open_specfile(fnameout, cdatea, cflag_s, lon, lat, fr, theta, ideldo)
+         write(iu06,"(a)") "cdatea = "//cdatea
+         write(iu06,"(a)") "NetCDF file opened: '"//trim(fnameout)//"'"
 
         ! Delta-frequency array
          ALLOCATE (dfim(nfre))
@@ -608,7 +616,7 @@ PROGRAM gribspec2nc
          ENDDO
          dfim(nfre) = co1*fr(nfre-1)
 
-        ! Find lat and lon of all grid points
+         ! Find lat and lon of all grid points
          ilon = 0
          ilat = 1
          DO ij = 1, numberofvalues
@@ -639,82 +647,102 @@ PROGRAM gribspec2nc
            xlat(ij)=amonop-(ilat-1)*xdella
          ENDDO ! ij = 1, numberofvalues
 
-       ! Compute weights based on distances from wishlist to all grid points
+         ! Compute weights based on distances from wishlist to all grid points
 
          ! Read previously generated weight file?
-         IF (lsaveweights) THEN
-           IF (fweights /= ' ') lfile=LEN_TRIM(fweights)
-           INQUIRE (FILE=fweights(1:lfile), EXIST=llexistweights)
-           IF (llexistweights) THEN
-              OPEN (IFWEIGHTS, FILE=fweights(1:lfile), form="unformatted", status="old")
-              READ (IFWEIGHTS) sumw, idx, w, distmin
-              WRITE (*,*) "Read weights from file ", fweights
-              CLOSE (IFWEIGHTS)
-           ENDIF
-         ENDIF
+         if(lsaveweights) then
+            inquire(file=trim(fweights), exist=llexistweights)
+            if(llexistweights) then
+               open(ifweights, file=trim(fweights), form="unformatted", status="old")
+               read(ifweights, iostat=ios) sumw, idx, w, distmin, wFmt
+               if(ios /= 0) then
+                  write(iu06,"(a)") "ERROR Weights file '"//trim(fweights)//"' has an unknown format"
+                  llexistweights = .false.
+               elseif(wFmt == 2) then
+                  write(iu06,"(a)") "Read weights from file '"//trim(fweights)//"'"
+               else
+                  write(iu06,"(a,i0)") "ERROR Weights file '"//trim(fweights)//"' is the wrong format: ",wFmt
+                  llexistweights = .false.
+               end if
+               close(ifweights)
+            end if
+         end if
 
-         IF (.NOT. llexistweights) THEN
-            ! Loop over wishlist 
-            miss = 0
-            DO j = 1, nwish
+         ! If we have no weights at this point, calculate them
+         if(.not. llexistweights) then
+
+            distmin(:,:) = DISTMAX
+            sumw(:) = 0.0001
+
+            ! Loop over wishlist
+            !$OMP PARALLEL DO SHARED(w, idx, distmin, xlon, xlat, lon, lat) PRIVATE(dist)
+            do j=1,nwish
 
                ! Loop over grid points
-               DO ij = 1, numberofvalues
-                  ! Compute distance [km]
-                  dist(ij)=spheredist(xlon(ij),xlat(ij),lon(j),lat(j))/1000.0
-                  ! Set really close neighbours to min dist to avoid overflow
-                  IF (dist(ij) < TOL) THEN
-                     dist(ij) = TOL
-                  ENDIF
-               ENDDO ! ij = 1, numberofvalues
+               call spheredist(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
+               dist = dist/1000.0
+               dist(1:numberofvalues) = max(dist(1:numberofvalues), TOL)
 
                ! Find nearest neighbours
-               DO i = 1, neighbours
-                  distmin(j,i) = DISTMAX
-
+               do i=1,neighbours
                   ! Loop over grid points
-                  DO ij = 1, numberofvalues
-                     IF (dist(ij) < distmin(j,i)) THEN
-                        distmin(j,i) = dist(ij)
-                        idx(j,i) = ij
-                     ENDIF
-                  ENDDO ! ij = 1, numberofvalues
-
-                  ! Remove nearest spectral location from next search
-                  dist(idx(j,i)) = DISTMAX
-               ENDDO ! i = 1, neighbours
+                  do ij=1,numberofvalues
+                     if(dist(ij) < distmin(i,j)) then
+                        distmin(i,j) = dist(ij)
+                        idx(i,j) = ij
+                     end if
+                  end do
+                  dist(idx(i,j)) = DISTMAX ! Remove nearest spectral location from next search
+               end do
 
                ! Compute weights
-               i = 1
-               sumw(j) = 0.0001
-               DO WHILE ((i<=neighbours) .AND. (distmin(j,i)<=dtresh))
-                  w(j,i) = distmin(j,i)**(-POW)
-                  sumw(j) = sumw(j) + w(j,i)
-                  i = i+1
-               ENDDO ! i; end while
+               do i=1,neighbours
+                  if(distmin(i,j) > dtresh) exit
+                  w(i,j) = distmin(i,j)**(-POW)
+                  sumw(j) = sumw(j) + w(i,j)
+               end do
 
-               ! Flag loners
-               IF (distmin(j,1) > dtresh) THEN
-                  miss = miss+1
-                  IF (itest>0) THEN
-                     WRITE (*,"(a,i5,a,f11.6,a,f12.6)") "WARNING: No spectra within range for pos",j," at lat",lat(j),", lon",lon(j)
-                  ENDIF
-               ENDIF
-            ENDDO ! j = 1, nwish
+            end do ! j = 1, nwish
+            !$OMP END PARALLEL DO
 
-            IF (lsaveweights) THEN
-               OPEN (IFWEIGHTS, FILE=fweights(1:LFILE), form="unformatted", status="unknown")
-               WRITE (IFWEIGHTS) sumw, idx, w, distmin
-               WRITE (*,*) "Saved weights to file ", fweights
-               CLOSE (IFWEIGHTS)
-            ENDIF ! lsaveweights
-         ENDIF ! .NOT. llexistweights
+            ! Flag loners
+            miss = 0
+            do j=1,nwish
+               if(distmin(1,j) > dtresh) then
+                  miss = miss + 1
+                  if(itest>0) then
+                     write(iu06,"(a,i0,a,f11.6,a,f12.6)") &
+                        "WARNING No spectra within range for pos ",j," at lat ",lat(j),", lon",lon(j)
+                  end if
+               end if
+            end do
 
-         lfirst = .FALSE.
+            ! open(42, file="weights.txt", form="formatted", status="replace")
+            ! write(42,*) sumw
+            ! write(42,*) idx
+            ! write(42,*) w
+            ! write(42,*) distmin
+            ! close(42)
 
-      ENDIF ! lfirst
+            if(lsaveweights) then
+               open(ifweights, file=trim(fweights), form="unformatted", status="unknown", iostat=ios)
+               if(ios /= 0) then
+                  write(iu06,"(a)") "ERROR Failed to open weights file '"//trim(fweights)//"' for writing."
+               else
+                  wFmt = 2
+                  write(ifweights) sumw, idx, w, distmin, wFmt
+                  write(iu06,"(a)") "Saved weights to file '"//trim(fweights)//"'"
+                  close(ifweights)
+               end if
+            end if
+         end if ! .not. llexistweights
 
-     !!! Interpolate spectra to list of locations
+         lfirst = .false.
+
+         call echoTimeStamp("loop after weights")
+      end if ! lfirst
+
+      ! Interpolate spectra to list of locations
 
       ! Loop over wish list
       hm0 = 0.0
@@ -727,21 +755,21 @@ PROGRAM gribspec2nc
 
          ! Loop over nearest neighbours
          i = 1
-         DO WHILE ( i <= neighbours .AND. distmin(j,i) <= dtresh )
+         DO WHILE ( i <= neighbours .AND. distmin(i,j) <= dtresh )
             ! Grid index
-            ij = idx(j,i)
+            ij = idx(i,j)
 
             ! Spectral component weights
             DO m = 1, nfre
                DO k = 1, nang
-                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(j,i)
+                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(i,j)
                ENDDO
             ENDDO
             i = i+1
          ENDDO ! while i
 
          ! Divide spectrum by sum of weights and compute scalars of those within range
-         IF (distmin(j,1) <= dtresh) THEN
+         IF (distmin(1,j) <= dtresh) THEN
 
             ! Divide spectrum by sum of weights
             spw(:,:) = spw(:,:)/sumw(j)
@@ -758,7 +786,7 @@ PROGRAM gribspec2nc
                      temp = temp+spw(k,m)
                   ENDDO
                   etot = etot+temp*dfim(m)
-               ENDDO     
+               ENDDO
                ! Compute tail energy
                etot = etot+delt25*temp
                hm0(j,1) = 4.0*sqrt(etot)
@@ -771,7 +799,7 @@ PROGRAM gribspec2nc
                   DO k = 1,nang
                      esumth(m) = esumth(m)+spw(k,m)
                   ENDDO
-                  IF (esumth(m) > emax) THEN 
+                  IF (esumth(m) > emax) THEN
                      emax = esumth(m)
                      mmax = m
                   ENDIF
@@ -804,7 +832,7 @@ PROGRAM gribspec2nc
                      emax = esumfr(k)
                      kmax = k
                   ENDIF
-               ENDDO         
+               ENDDO
 
                ! More accurate computation of peak direction
                IF (esumfr(kmax) > 0.0) THEN
@@ -815,26 +843,27 @@ PROGRAM gribspec2nc
                   pdir(j,1) = ang360(pdir(j,1) + th0)
                   IF (pdir(j,1) < 0.0) pdir(j,1) = pdir(j,1) + 360.0
                   IF (pdir(j,1) >= 360.0) pdir(j,1) = pdir(j,1) - 360.0
-               ENDIF          
+               ENDIF
 
             ENDIF ! lextras
-            
+
          ENDIF ! distmin <= dtresh
 
          ! Write spectrum if location is within range or lnullspec is true
-         IF ( (distmin(j,1) <= dtresh) .OR. lnullspec) THEN
+         IF ( (distmin(1,j) <= dtresh) .OR. lnullspec) THEN
             CALL nc_write_spec(1,spw,itstep,j,ideldo)
-         ENDIF ! ( (distmin(j,1) <= dtresh) .OR. lnullspec)
+         ENDIF ! ( (distmin(i,j) <= dtresh) .OR. lnullspec)
       ENDDO ! j = 1, nwish
       IF (lextras) THEN
          CALL nc_write_intpar(4,hm0,itstep,ideldo)
          CALL nc_write_intpar(5,tpeak,itstep,ideldo)
          CALL nc_write_intpar(6,pdir,itstep,ideldo)
       ENDIF ! lextras
+      call echoTimeStamp("loop after wish")
 
       CALL grib_release(igrib)
       igrib=-99
-      
+
       istep = istep+1
       CALL grib_new_from_file(ifile, igrib, iret)
 
@@ -863,7 +892,7 @@ PROGRAM gribspec2nc
    IF (ALLOCATED(lat)) DEALLOCATE(lat)
    IF (ALLOCATED(xlon)) DEALLOCATE(xlon)
    IF (ALLOCATED(xlat)) DEALLOCATE(xlat)
-   IF (ALLOCATED(idx)) DEALLOCATE (idx)
+   IF (ALLOCATED(idx)) DEALLOCATE(idx)
    IF (ALLOCATED(w)) DEALLOCATE (w)
    IF (ALLOCATED(sumw)) DEALLOCATE (sumw)
    IF (ALLOCATED(distmin)) DEALLOCATE (distmin)
@@ -871,11 +900,13 @@ PROGRAM gribspec2nc
    IF (ALLOCATED(pdir)) DEALLOCATE (pdir)
    IF (ALLOCATED(tpeak)) DEALLOCATE (tpeak)
 
+   call echoTimeStamp("end")
+
 END PROGRAM gribspec2nc
 
 !#######################################################################
 FUNCTION getclo(yaoptions, yaargument)
-   INTEGER getclo, getcla, my_rtb
+   INTEGER getclo, getcla
    CHARACTER*   1 yolastarg
    CHARACTER* (*) yaoptions, yaargument
    CHARACTER* 120 arg
@@ -886,9 +917,9 @@ FUNCTION getclo(yaoptions, yaargument)
 
    arg=' '
    CALL getarg(here,arg)
-   iol=my_rtb(arg)
+   iol = len_trim(arg)
    IF (iol == 2 .AND. arg(1:1) == '-' .AND. ivarg == 0 ) THEN
-      iol = my_rtb(yaoptions)
+      iol = len_trim(yaoptions)
       DO jl = 1, iol
          getclo = 0
          IF ( yaoptions(jl:jl) .EQ. arg(2:2) ) THEN
@@ -933,53 +964,6 @@ FUNCTION getclo(yaoptions, yaargument)
       ivarg=0
    !-->  PRINT*,' getcla in getcla ', getcla
 
-   RETURN
-END
-
-INTEGER FUNCTION MY_RTB (CHAR)
-!
-!---->
-!*
-!*    NAME      : MY_RTB
-!*
-!*    FUNCTION  : COUNT THE NUMBER OF CHARACTERS IN A CHARACTER
-!*                STRING, EXCLUDING TRAILING SPACES.
-!*
-!*    INPUT     : CHAR - CHARACTER STRING
-!*
-!*    OUTPUT    : MY_RTB  - NO OF CHARACTERS
-!*
-!*    GENERAL   : MY_RTB CALLS  -----
-!*
-!*    AUTHOR    : J.HENNESSY  15.4.85
-!*
-!     ---------------------------------------------------------------
-!----<
-!
-   CHARACTER*(*) CHAR
-!
-   j = LEN(char)
-!
-!     No trailing blanks.
-!
-   IF (char(j:j) /= ' ') THEN
-      my_rtb = j
-      RETURN
-   ENDIF
-!
-!     String with trailing blanks.
-!
-   DO I = J,1,-1
-      IF (CHAR(I:I).NE.' ') THEN
-         MY_RTB = I
-         RETURN
-      ENDIF
-   ENDDO
-!
-!     String consists of only blanks.
-!
-   MY_RTB = 0
-!
    RETURN
 END
 
@@ -1039,7 +1023,7 @@ END SUBROUTINE ADJUST
 
 !**** *INCDATE* - TO UPDATE DATE TIME GROUP
 
-!     J. BIDLOT   FEB 2007    RE-INRODUCING THE OLD WAY WITHOUT 
+!     J. BIDLOT   FEB 2007    RE-INRODUCING THE OLD WAY WITHOUT
 !                             THE NEED FOR ECLIB. ADDING SECONDS
 
 !**   PURPOSE.
@@ -1065,7 +1049,7 @@ END SUBROUTINE ADJUST
 
 !       THE DATE AND TIME CAN BE SUPPLIED IN THE Y2K COMPLIANT
 !       14 CHARACTER OR 12 CHARACTER FORMAT. IF THE 10 CHARACTER
-!       FORMAT IS USED, AN ERROR MESSAGE WILL BE ISSUED. 
+!       FORMAT IS USED, AN ERROR MESSAGE WILL BE ISSUED.
 
 !     EXTERNALS.
 !     ----------
@@ -1198,7 +1182,6 @@ END SUBROUTINE ADJUST
             ENDDO
          END IF
       ELSE IF (IMIN.LT.0) THEN
- 
 !     2.2 NEGATIVE SHIFT.
 
          IHOUR = IHOUR + (IMIN-59)/60
@@ -1248,9 +1231,9 @@ END SUBROUTINE ADJUST
 
       IF (LLND) THEN
         IF (IL==12) THEN
-          WRITE(CDATE,'(I4.4, 4I2.2)')IYEAR, IMON, IDAY, IHOUR, IMIN 
+          WRITE(CDATE,'(I4.4, 4I2.2)')IYEAR, IMON, IDAY, IHOUR, IMIN
         ELSEIF (IL==14) THEN
-          WRITE(CDATE,'(I4.4, 5I2.2)')IYEAR, IMON, IDAY, IHOUR,IMIN, ISEC 
+          WRITE(CDATE,'(I4.4, 5I2.2)')IYEAR, IMON, IDAY, IHOUR,IMIN, ISEC
         ELSE
           WRITE(6,'(" THE LENGTH OF THE INPUT CHARACTER CHANGED @!")')
           !CALL ABORT1
@@ -1274,7 +1257,7 @@ END SUBROUTINE ADJUST
 
       FUNCTION MFEB_LENGTH(IYEAR)
 !     LENGTH OF FEBRUARY IN DAYS FOR YEAR IYEAR (YYYY)
-      INTEGER :: MFEB_LENGTH  
+      INTEGER :: MFEB_LENGTH
       INTEGER :: IYEAR
       IF(MOD(IYEAR,400).EQ.0) THEN
         MFEB_LENGTH=29
