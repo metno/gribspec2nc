@@ -23,6 +23,6 @@ rm -fv *.o
 gfortran $FLAGS $NETCDF_INCLUDE $NETCDF_LIB -lnetcdff -c ../src/netcdf_metno_spec.f90
 gfortran $FLAGS -c ../src/debug.f90
 gfortran $FLAGS -c ../src/sphere_vec.f90
-gfortran $FLAGS ../src/debug.f90 ../src/gribspec2nc.f90 ../src/sphere.f ../src/sphere_vec.f90 ../src/netcdf_metno_spec.f90 $NETCDF_INCLUDE $NETCDF_LIB $GRIB_API_INCLUDE $GRIB_API_LIB -o ../gribspec2nc
+gfortran $FLAGS -fopenmp ../src/debug.f90 ../src/gribspec2nc.f90 ../src/sphere.f ../src/sphere_vec.f90 ../src/netcdf_metno_spec.f90 $NETCDF_INCLUDE $NETCDF_LIB $GRIB_API_INCLUDE $GRIB_API_LIB -o ../gribspec2nc
 
 cd ..

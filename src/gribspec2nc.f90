@@ -664,8 +664,12 @@ PROGRAM gribspec2nc
          ENDIF
 
          IF (.NOT. llexistweights) THEN
+
+            distmin(:,:) = DISTMAX
+            sumw(:) = 0.0001
+
             ! Loop over wishlist
-            miss = 0
+            !$OMP PARALLEL DO SHARED(xlon, xlat) PRIVATE(dist)
             do j=1,nwish
 
                ! Loop over grid points
@@ -674,38 +678,46 @@ PROGRAM gribspec2nc
                dist(1:numberofvalues) = max(dist(1:numberofvalues), TOL)
 
                ! Find nearest neighbours
-               DO i = 1, neighbours
-                  distmin(j,i) = DISTMAX
-
+               do i=1,neighbours
                   ! Loop over grid points
-                  DO ij = 1, numberofvalues
-                     IF (dist(ij) < distmin(j,i)) THEN
+                  do ij=1,numberofvalues
+                     if(dist(ij) < distmin(j,i)) then
                         distmin(j,i) = dist(ij)
                         idx(j,i) = ij
-                     ENDIF
-                  ENDDO ! ij = 1, numberofvalues
+                     end if
+                  end do
 
                   ! Remove nearest spectral location from next search
                   dist(idx(j,i)) = DISTMAX
-               ENDDO ! i = 1, neighbours
+               end do
 
                ! Compute weights
-               i = 1
-               sumw(j) = 0.0001
-               DO WHILE ((i<=neighbours) .AND. (distmin(j,i)<=dtresh))
+               do i=1,neighbours
+                  if(distmin(j,i) > dtresh) exit
                   w(j,i) = distmin(j,i)**(-POW)
                   sumw(j) = sumw(j) + w(j,i)
-                  i = i+1
-               ENDDO ! i; end while
+               end do
 
-               ! Flag loners
+            end do ! j = 1, nwish
+            !$OMP END PARALLEL DO
+
+            ! Flag loners
+            miss = 0
+            do j=1,nwish
                IF (distmin(j,1) > dtresh) THEN
-                  miss = miss+1
+                  miss = miss + 1
                   IF (itest>0) THEN
                      WRITE (*,"(a,i5,a,f11.6,a,f12.6)") "WARNING: No spectra within range for pos",j," at lat",lat(j),", lon",lon(j)
                   ENDIF
                ENDIF
-            ENDDO ! j = 1, nwish
+            end do
+
+            ! open(42, file="weights.txt", form="formatted", status="replace")
+            ! write(42,*) sumw
+            ! write(42,*) idx
+            ! write(42,*) w
+            ! write(42,*) distmin
+            ! close(42)
 
             IF (lsaveweights) THEN
                OPEN (IFWEIGHTS, FILE=fweights(1:LFILE), form="unformatted", status="unknown")
