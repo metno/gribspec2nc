@@ -207,7 +207,7 @@ PROGRAM gribspec2nc
    iu06  = output_unit ! Usually unit 6
 
    ! DEBUG flag to print timing information
-   debug_enableTimeStamps = .true.
+   debug_enableTimeStamps = .false.
 
    CMDLINE: DO
       IOPTVAL=GETCLO(CLOPTS,CLARG)
@@ -675,7 +675,7 @@ PROGRAM gribspec2nc
             sumw(:) = 0.0001
 
             ! Loop over wishlist
-            !$OMP PARALLEL DO SHARED(w, idx, distmin, xlon, xlat, lon, lat) PRIVATE(dist, i, j, ij)
+            !$OMP PARALLEL DO SHARED(w, idx, distmin, xlon, xlat, lon, lat) PRIVATE(dist)
             do j=1,nwish
 
                ! Loop over grid points

@@ -12,7 +12,7 @@ pwd
 rm -fv *.o *.mod
 
 export GRIB_API_INCLUDE="-I/usr/local/include"
-export GRIB_API_LIB="-L/usr/local/lib -lgrib_api_f90 -lgrib_api"
+export GRIB_API_LIB="-lgrib_api_f90 -lgrib_api"
 
 export NETCDF_INCLUDE="$(nf-config --fflags)"
 export NETCDF_LIB="$(nf-config --flibs) -lnetcdff"
