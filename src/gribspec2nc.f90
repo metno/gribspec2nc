@@ -91,6 +91,7 @@ PROGRAM gribspec2nc
    USE netcdf
    USE netcdf_metno_spec
    use sphere_vec, only : spheredist
+   use, intrinsic :: iso_fortran_env, only : output_unit
    use debug_utils
 
    IMPLICIT NONE
@@ -118,7 +119,7 @@ PROGRAM gribspec2nc
    INTEGER, PARAMETER :: IFWEIGHTS = 23
 
    ! Vars
-   INTEGER :: morarg, iu06
+   INTEGER :: morarg, iu06, wFmt
    INTEGER :: i1, itest
    INTEGER :: itabpar, iparam, itable, irgg, iscan
    INTEGER :: iyyyymmdd, ihhmm, ihh, imm, idd, iyyyy, imi, ihha, ihh0
@@ -198,14 +199,14 @@ PROGRAM gribspec2nc
 !*    INITIAL VALUES SET AND CRACK COMMAND LINE.
 !     -----------------------------------------
 
-   fnamein='input_spectra'
-   fnameout='output_spectra.nc'
-   fspeclist='speclist.inp'
-   fweights=' '
-   itest=0
-   iu06=6
+   fnamein   = 'input_spectra'
+   fnameout  = 'output_spectra.nc'
+   fspeclist = 'speclist.inp'
+   fweights  = ' '
+   itest = 0
+   iu06  = output_unit ! Usually unit 6
 
-   ! DEBUG flag
+   ! DEBUG flag to print timing information
    debug_enableTimeStamps = .true.
 
    CMDLINE: DO
@@ -294,9 +295,9 @@ PROGRAM gribspec2nc
    CLOSE (IFSPECLIST)
 
    ALLOCATE (sumw(nwish))
-   ALLOCATE (idx(nwish,neighbours))
-   ALLOCATE (w(nwish,neighbours))
-   ALLOCATE (distmin(nwish,neighbours))
+   ALLOCATE (idx(neighbours,nwish))
+   ALLOCATE (w(neighbours,nwish))
+   ALLOCATE (distmin(neighbours,nwish))
    ALLOCATE (hm0(nwish,1))
    ALLOCATE (pdir(nwish,1))
    ALLOCATE (tpeak(nwish,1))
@@ -497,6 +498,8 @@ PROGRAM gribspec2nc
 
       delth = ZPI/nang
 
+      call echoTimeStamp("loop after grib")
+
  !       DECODE INPUT GRIB DATA
  !       ----------------------
 
@@ -590,16 +593,15 @@ PROGRAM gribspec2nc
          ENDDO ! nfre
       ENDIF ! param 250 or 251
 
-      call echoTimeStamp("loop after grib")
+      call echoTimeStamp("loop after decode")
 
-     ! Initialize weights etc. Only once
-
+      ! Initialize weights etc. Only once
       IF (lfirst) THEN
          !*    OPEN NetCDF OUTPUT FILE
          !     ---------------------------------------
-         CALL nc_open_specfile(fnameout, cdatea, cflag_s, lon, lat, fr, theta, ideldo)
-         print *, "cdatea = ",cdatea
-         WRITE (iu06,*) ' +++ NetCDF file opened ', trim(fnameout)
+         call nc_open_specfile(fnameout, cdatea, cflag_s, lon, lat, fr, theta, ideldo)
+         write(iu06,"(a)") "cdatea = "//cdatea
+         write(iu06,"(a)") "NetCDF file opened: '"//trim(fnameout)//"'"
 
         ! Delta-frequency array
          ALLOCATE (dfim(nfre))
@@ -614,7 +616,7 @@ PROGRAM gribspec2nc
          ENDDO
          dfim(nfre) = co1*fr(nfre-1)
 
-        ! Find lat and lon of all grid points
+         ! Find lat and lon of all grid points
          ilon = 0
          ilat = 1
          DO ij = 1, numberofvalues
@@ -645,26 +647,35 @@ PROGRAM gribspec2nc
            xlat(ij)=amonop-(ilat-1)*xdella
          ENDDO ! ij = 1, numberofvalues
 
-       ! Compute weights based on distances from wishlist to all grid points
+         ! Compute weights based on distances from wishlist to all grid points
 
          ! Read previously generated weight file?
-         IF (lsaveweights) THEN
+         if(lsaveweights) then
             inquire(file=trim(fweights), exist=llexistweights)
             if(llexistweights) then
                open(ifweights, file=trim(fweights), form="unformatted", status="old")
-               read(ifweights) sumw, idx, w, distmin
-               write(*,"(a)") "Read weights from file '"//trim(fweights)//"'"
+               read(ifweights, iostat=ios) sumw, idx, w, distmin, wFmt
+               if(ios /= 0) then
+                  write(iu06,"(a)") "ERROR Weights file '"//trim(fweights)//"' has an unknown format"
+                  llexistweights = .false.
+               elseif(wFmt == 2) then
+                  write(iu06,"(a)") "Read weights from file '"//trim(fweights)//"'"
+               else
+                  write(iu06,"(a,i0)") "ERROR Weights file '"//trim(fweights)//"' is the wrong format: ",wFmt
+                  llexistweights = .false.
+               end if
                close(ifweights)
             end if
          end if
 
-         IF (.NOT. llexistweights) THEN
+         ! If we have no weights at this point, calculate them
+         if(.not. llexistweights) then
 
             distmin(:,:) = DISTMAX
             sumw(:) = 0.0001
 
             ! Loop over wishlist
-            !$OMP PARALLEL DO SHARED(xlon, xlat) PRIVATE(dist)
+            !$OMP PARALLEL DO SHARED(w, idx, distmin, xlon, xlat, lon, lat) PRIVATE(dist, i, j, ij)
             do j=1,nwish
 
                ! Loop over grid points
@@ -676,21 +687,19 @@ PROGRAM gribspec2nc
                do i=1,neighbours
                   ! Loop over grid points
                   do ij=1,numberofvalues
-                     if(dist(ij) < distmin(j,i)) then
-                        distmin(j,i) = dist(ij)
-                        idx(j,i) = ij
+                     if(dist(ij) < distmin(i,j)) then
+                        distmin(i,j) = dist(ij)
+                        idx(i,j) = ij
                      end if
                   end do
-
-                  ! Remove nearest spectral location from next search
-                  dist(idx(j,i)) = DISTMAX
+                  dist(idx(i,j)) = DISTMAX ! Remove nearest spectral location from next search
                end do
 
                ! Compute weights
                do i=1,neighbours
-                  if(distmin(j,i) > dtresh) exit
-                  w(j,i) = distmin(j,i)**(-POW)
-                  sumw(j) = sumw(j) + w(j,i)
+                  if(distmin(i,j) > dtresh) exit
+                  w(i,j) = distmin(i,j)**(-POW)
+                  sumw(j) = sumw(j) + w(i,j)
                end do
 
             end do ! j = 1, nwish
@@ -699,12 +708,13 @@ PROGRAM gribspec2nc
             ! Flag loners
             miss = 0
             do j=1,nwish
-               IF (distmin(j,1) > dtresh) THEN
+               if(distmin(1,j) > dtresh) then
                   miss = miss + 1
-                  IF (itest>0) THEN
-                     WRITE (*,"(a,i5,a,f11.6,a,f12.6)") "WARNING: No spectra within range for pos",j," at lat",lat(j),", lon",lon(j)
-                  ENDIF
-               ENDIF
+                  if(itest>0) then
+                     write(iu06,"(a,i0,a,f11.6,a,f12.6)") &
+                        "WARNING No spectra within range for pos ",j," at lat ",lat(j),", lon",lon(j)
+                  end if
+               end if
             end do
 
             ! open(42, file="weights.txt", form="formatted", status="replace")
@@ -715,19 +725,24 @@ PROGRAM gribspec2nc
             ! close(42)
 
             if(lsaveweights) then
-               open(ifweights, file=trim(fweights), form="unformatted", status="replace")
-               write(ifweights) sumw, idx, w, distmin
-               write(*,"(a)") "Saved weights to file '"//trim(fweights)//"'"
-               close (ifweights)
+               open(ifweights, file=trim(fweights), form="unformatted", status="unknown", iostat=ios)
+               if(ios /= 0) then
+                  write(iu06,"(a)") "ERROR Failed to open weights file '"//trim(fweights)//"' for writing."
+               else
+                  wFmt = 2
+                  write(ifweights) sumw, idx, w, distmin, wFmt
+                  write(iu06,"(a)") "Saved weights to file '"//trim(fweights)//"'"
+                  close(ifweights)
+               end if
             end if
          end if ! .not. llexistweights
 
-         lfirst = .FALSE.
+         lfirst = .false.
 
          call echoTimeStamp("loop after weights")
       end if ! lfirst
 
-     !!! Interpolate spectra to list of locations
+      ! Interpolate spectra to list of locations
 
       ! Loop over wish list
       hm0 = 0.0
@@ -740,21 +755,21 @@ PROGRAM gribspec2nc
 
          ! Loop over nearest neighbours
          i = 1
-         DO WHILE ( i <= neighbours .AND. distmin(j,i) <= dtresh )
+         DO WHILE ( i <= neighbours .AND. distmin(i,j) <= dtresh )
             ! Grid index
-            ij = idx(j,i)
+            ij = idx(i,j)
 
             ! Spectral component weights
             DO m = 1, nfre
                DO k = 1, nang
-                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(j,i)
+                  spw(k,m) = spw(k,m) + spec(k+(m-1)*nang+(ij-1)*nfrang)*w(i,j)
                ENDDO
             ENDDO
             i = i+1
          ENDDO ! while i
 
          ! Divide spectrum by sum of weights and compute scalars of those within range
-         IF (distmin(j,1) <= dtresh) THEN
+         IF (distmin(1,j) <= dtresh) THEN
 
             ! Divide spectrum by sum of weights
             spw(:,:) = spw(:,:)/sumw(j)
@@ -835,9 +850,9 @@ PROGRAM gribspec2nc
          ENDIF ! distmin <= dtresh
 
          ! Write spectrum if location is within range or lnullspec is true
-         IF ( (distmin(j,1) <= dtresh) .OR. lnullspec) THEN
+         IF ( (distmin(1,j) <= dtresh) .OR. lnullspec) THEN
             CALL nc_write_spec(1,spw,itstep,j,ideldo)
-         ENDIF ! ( (distmin(j,1) <= dtresh) .OR. lnullspec)
+         ENDIF ! ( (distmin(i,j) <= dtresh) .OR. lnullspec)
       ENDDO ! j = 1, nwish
       IF (lextras) THEN
          CALL nc_write_intpar(4,hm0,itstep,ideldo)
@@ -877,7 +892,7 @@ PROGRAM gribspec2nc
    IF (ALLOCATED(lat)) DEALLOCATE(lat)
    IF (ALLOCATED(xlon)) DEALLOCATE(xlon)
    IF (ALLOCATED(xlat)) DEALLOCATE(xlat)
-   IF (ALLOCATED(idx)) DEALLOCATE (idx)
+   IF (ALLOCATED(idx)) DEALLOCATE(idx)
    IF (ALLOCATED(w)) DEALLOCATE (w)
    IF (ALLOCATED(sumw)) DEALLOCATE (sumw)
    IF (ALLOCATED(distmin)) DEALLOCATE (distmin)
