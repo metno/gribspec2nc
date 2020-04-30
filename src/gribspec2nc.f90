@@ -119,7 +119,7 @@ PROGRAM gribspec2nc
 
    ! Vars
    INTEGER :: morarg, iu06
-   INTEGER :: i1, itest, lfile
+   INTEGER :: i1, itest
    INTEGER :: itabpar, iparam, itable, irgg, iscan
    INTEGER :: iyyyymmdd, ihhmm, ihh, imm, idd, iyyyy, imi, ihha, ihh0
    INTEGER :: jday0, jdaya
@@ -249,9 +249,7 @@ PROGRAM gribspec2nc
 
 !*    OPEN ASCII SPECTRAL LOCATION FILE AND READ WISH LIST
 !     ----------------------------------------------------
-   LFILE=0
-   IF (fspeclist.NE. ' ') LFILE=LEN_TRIM(fspeclist)
-   OPEN (IFSPECLIST, FILE=fspeclist(1:LFILE), form="formatted")
+   open(ifspeclist, file=trim(fspeclist), form="formatted")
 
    ! Count number of desired locations
    READ (IFSPECLIST, "(a)", iostat=ios) str
@@ -303,24 +301,22 @@ PROGRAM gribspec2nc
    ALLOCATE (pdir(nwish,1))
    ALLOCATE (tpeak(nwish,1))
 
-!*    OPEN DATA FILE
-!     --------------
-   lfile=0
-   llexist=.FALSE.
-   IF (fnamein /= ' ') lfile=LEN_TRIM(fnamein)
-   INQUIRE (FILE=fnamein(1:lfile), EXIST=llexist)
-   IF (llexist) THEN
-      CALL grib_open_file(ifile,fnamein(1:lfile),'r')
-   ELSE
-      WRITE(*,*)'****************************'
-      WRITE(*,*)'*                          *'
-      WRITE(*,*)'*GRIB DATA NOT FOUND IN *'
-      WRITE(*,*)  FNAMEIN
-      WRITE(*,*)'*PROGRAM WILL ABORT        *'
-      WRITE(*,*)'*                          *'
-      WRITE(*,*)'****************************'
-      CALL ABORT
-   ENDIF
+   ! OPEN DATA FILE
+   ! --------------
+   llexist = .false.
+   inquire(file=trim(fnamein), exist=llexist)
+   if(llexist) then
+      call grib_open_file(ifile, trim(fnamein), 'r')
+   else
+      write(*,*)'****************************'
+      write(*,*)'*                          *'
+      write(*,*)'* GRIB DATA NOT FOUND IN   *'
+      write(*,*)"  '"//trim(FNAMEIN)//"'"
+      write(*,*)'* PROGRAM WILL ABORT       *'
+      write(*,*)'*                          *'
+      write(*,*)'****************************'
+      call abort
+   end if
    call echoTimeStamp("data loaded")
 
 !  GET FIRST DATA FILE
@@ -462,14 +458,14 @@ PROGRAM gribspec2nc
 
       ! Compare cdatea, date inferred from GRIB file to cdatef, the date inferred assuming a constant time step ideldo
       IF (cdatea /= cdatef) THEN
-          IF (lstrict) THEN
-             print *, "Gribspec2nc: Error: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
-             print *, "Gribspec2nc: Aborting"
-             STOP
-          ELSE
-             print *, "Gribspec2nc: Warning: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
-          ENDIF
-          print *, "istep, itstep ", istep, itstep
+         IF (lstrict) THEN
+            print *, "Gribspec2nc: Error: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
+            print *, "Gribspec2nc: Aborting"
+            STOP
+         ELSE
+            print *, "Gribspec2nc: Warning: irregular timestepping or wrong user-specified time step at cdatea = ", cdatea
+         ENDIF
+         print *, "istep, itstep ", istep, itstep
       ENDIF
       CALL incdate(cdatef, ideldo)
 
@@ -653,15 +649,14 @@ PROGRAM gribspec2nc
 
          ! Read previously generated weight file?
          IF (lsaveweights) THEN
-           IF (fweights /= ' ') lfile=LEN_TRIM(fweights)
-           INQUIRE (FILE=fweights(1:lfile), EXIST=llexistweights)
-           IF (llexistweights) THEN
-              OPEN (IFWEIGHTS, FILE=fweights(1:lfile), form="unformatted", status="old")
-              READ (IFWEIGHTS) sumw, idx, w, distmin
-              WRITE (*,*) "Read weights from file ", fweights
-              CLOSE (IFWEIGHTS)
-           ENDIF
-         ENDIF
+            inquire(file=trim(fweights), exist=llexistweights)
+            if(llexistweights) then
+               open(ifweights, file=trim(fweights), form="unformatted", status="old")
+               read(ifweights) sumw, idx, w, distmin
+               write(*,"(a)") "Read weights from file '"//trim(fweights)//"'"
+               close(ifweights)
+            end if
+         end if
 
          IF (.NOT. llexistweights) THEN
 
@@ -719,18 +714,18 @@ PROGRAM gribspec2nc
             ! write(42,*) distmin
             ! close(42)
 
-            IF (lsaveweights) THEN
-               OPEN (IFWEIGHTS, FILE=fweights(1:LFILE), form="unformatted", status="unknown")
-               WRITE (IFWEIGHTS) sumw, idx, w, distmin
-               WRITE (*,*) "Saved weights to file ", fweights
-               CLOSE (IFWEIGHTS)
-            ENDIF ! lsaveweights
-         ENDIF ! .NOT. llexistweights
+            if(lsaveweights) then
+               open(ifweights, file=trim(fweights), form="unformatted", status="replace")
+               write(ifweights) sumw, idx, w, distmin
+               write(*,"(a)") "Saved weights to file '"//trim(fweights)//"'"
+               close (ifweights)
+            end if
+         end if ! .not. llexistweights
 
          lfirst = .FALSE.
 
          call echoTimeStamp("loop after weights")
-      ENDIF ! lfirst
+      end if ! lfirst
 
      !!! Interpolate spectra to list of locations
 
