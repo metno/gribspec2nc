@@ -1,15 +1,22 @@
 # GribSpec2NC
 
-Oyvind Breivik, Norwegian Meteorological Institute
+Oyvind Breivik, Norwegian Meteorological Institute.
 
-## PURPOSE
+Modified and improved by Veronica Berglyd Olsen, 2020–2021.
+
+## Purpose
 
 Decodes GRIB spectra stored as GRIB parameter 251.
 The results will be saved as a NetCDF file containing
 spectra in selected locations provided as input.
 The spectra are interpolated to these locations if possible.
 
-## USAGE
+## Building
+
+The provided compile scripts should give an idea of what is needed.
+The script `compile_ppi_gfortran.sh` builds with gfortran on PPI using the old Grib API, not ecCodes.
+
+## Usage
 
 ```
     gribspec2nc [-x] [-d timestep_hh][-i infile] [-l speclist.inp] [-o outfile] [-t itest] [-w weightfile]
@@ -29,7 +36,7 @@ The spectra are interpolated to these locations if possible.
         itest: 3 (all diagnostics)
 ```
 
-## INPUT FILE REQUIREMENT
+## Input File Requirement
 
 The input file can only contain one parameter (251) obtained
 for all directions and frequencies in the default order. Namely, the

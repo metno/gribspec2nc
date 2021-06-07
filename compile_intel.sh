@@ -1,39 +1,40 @@
 #!/bin/bash
 
-# purge modules to avoid conflicts
-module purge
+# Note: This script no longer works. It is kept for reference only or un til it can be fixed.
 
-# load modules
-module load buildenv-intel/2018a-eb
-module load netCDF/4.4.1.1-HDF5-1.8.19-nsc1-intel-2018a-eb
-module load grib_api/1.24.0-nsc1-intel-2018a-eb
+echo "This script is currently not in use"
 
-FLAGS="-O2 -m64"
+# # Load Modules
+# module purge
+# module load buildenv-intel/2018a-eb
+# module load netCDF/4.4.1.1-HDF5-1.8.19-nsc1-intel-2018a-eb
+# module load grib_api/1.24.0-nsc1-intel-2018a-eb
 
-if [ ! -d build ]; then
-    mkdir build
-fi
+# FLAGS="-O2 -m64"
 
-cd build/
-rm -fv *.mod
-rm -fv *.o
+# if [ ! -d build ]; then
+#     mkdir build
+# fi
 
-# setup for grib
-export GRIB_API=${GRIB_API_DIR}
-export GRIB_API_INCLUDE="-I${GRIB_API}/include"
-export GRIB_API_LIB="-L${GRIB_API}/lib -lgrib_api_f90 -lgrib_api"
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GRIB_API}/lib
-echo $LD_LIBRARY_PATH
+# cd build/
+# rm -fv *.mod *.o
 
-# setup for netcdf
-export NETCDF=${NETCDF_DIR}
-export NETCDF_INCLUDE="-I${NETCDF}/include"
-export NETCDF_LIB="-L${NETCDF}/lib -lnetcdff"
+# # setup for grib
+# export GRIB_API=${GRIB_API_DIR}
+# export GRIB_API_INCLUDE="-I${GRIB_API}/include"
+# export GRIB_API_LIB="-L${GRIB_API}/lib -lgrib_api_f90 -lgrib_api"
+# export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GRIB_API}/lib
+# echo $LD_LIBRARY_PATH
 
-# Compile
-ifort $FLAGS $NETCDF_INCLUDE $NETCDF_LIB -c ../src/netcdf_metno_spec.f90
-ifort $FLAGS -c ../src/debug.f90
-ifort $FLAGS -c ../src/sphere_vec.f90
-ifort $FLAGS -fopenmp ../src/debug.f90 ../src/gribspec2nc.f90 ../src/sphere.f ../src/sphere_vec.f90 ../src/netcdf_metno_spec.f90 $NETCDF_INCLUDE $NETCDF_LIB $GRIB_API_INCLUDE $GRIB_API_LIB -o ../gribspec2nc
+# # setup for netcdf
+# export NETCDF=${NETCDF_DIR}
+# export NETCDF_INCLUDE="-I${NETCDF}/include"
+# export NETCDF_LIB="-L${NETCDF}/lib -lnetcdff"
 
-cd ..
+# # Compile
+# ifort $FLAGS $NETCDF_INCLUDE $NETCDF_LIB -c ../src/netcdf_metno_spec.f90
+# ifort $FLAGS -c ../src/debug.f90
+# ifort $FLAGS -c ../src/sphere_vec.f90
+# ifort $FLAGS -fopenmp ../src/debug.f90 ../src/gribspec2nc.f90 ../src/sphere.f ../src/sphere_vec.f90 ../src/netcdf_metno_spec.f90 $NETCDF_INCLUDE $NETCDF_LIB $GRIB_API_INCLUDE $GRIB_API_LIB -o ../gribspec2nc
+
+# cd ..
