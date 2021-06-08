@@ -87,7 +87,7 @@ PROGRAM gribspec2nc
 
 ! ----------------------------------------------------------------------
 
-   USE GRIB_API
+   USE eccodes
    USE netcdf
    USE netcdf_metno_spec
    use sphere_vec, only : spheredist
