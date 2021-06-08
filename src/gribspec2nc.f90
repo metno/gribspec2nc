@@ -88,6 +88,7 @@ PROGRAM gribspec2nc
 ! ----------------------------------------------------------------------
 
    USE eccodes
+   use omp_lib
    USE netcdf
    USE netcdf_metno_spec
    use sphere_vec, only : spheredist
@@ -158,6 +159,7 @@ PROGRAM gribspec2nc
    LOGICAL :: lsaveweights = .FALSE.
    LOGICAL :: lextras = .FALSE.
    LOGICAL :: llexistweights = .FALSE.
+   logical :: hello = .false.
 
    ! Arrays
 
@@ -677,6 +679,11 @@ PROGRAM gribspec2nc
             ! Loop over wishlist
             !$OMP PARALLEL DO SHARED(w, idx, distmin, xlon, xlat, lon, lat) PRIVATE(dist)
             do j=1,nwish
+
+               if (.not. hello) then
+                  write(iu06,"(a,i0,a)") "OpenMP running with ", omp_get_num_threads(), " threads."
+                  hello = .true.
+               end if
 
                ! Loop over grid points
                call spheredist(xlon(:), xlat(:), lon(j), lat(j), dist(:), numberofvalues)
