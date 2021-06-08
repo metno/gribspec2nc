@@ -91,16 +91,13 @@ PROGRAM gribspec2nc
    use omp_lib
    USE netcdf
    USE netcdf_metno_spec
-   use sphere_vec, only : spheredist
+   use sphere_vec, only : spheredist, ang180, ang360
    use, intrinsic :: iso_fortran_env, only : output_unit
    use debug_utils
 
    IMPLICIT NONE
 
    ! Functions called
-  !  REAL :: spheredist
-   REAL :: ang180
-   REAL :: ang360
    INTEGER :: getclo
    INTEGER :: julday
 

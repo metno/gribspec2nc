@@ -195,4 +195,36 @@ real(kind=dbl) pure function ang2pi(ang)
   ang2pi = modulo(ang, twopi)
 end function ang2pi
 
+! === FUNCTION ang180 ======================================================== !
+! Maps arbitrary angle [deg] to [-180, 180) [deg].
+! Use this whenever two angles are subtracted.
+!
+! 2001-08-15, Oyvind.Breivik@dnmi.no
+! 2021-06-08, Veronica.Berglyd.Olsen@met.no : Moved from sphere.f
+! ============================================================================ !
+real pure function ang180(ang)
+
+  implicit none
+  real, intent(in) :: ang ! [deg]
+
+  ang180 = mod(ang, 360.0) - (sign(1.0,ang)-1.0)*180.0
+  ang180 = ang180 - 180.0*(sign(1.0, ang180-180.0)+1.0)
+
+end function ang180
+
+! === FUNCTION ang360 ======================================================== !
+! Maps arbitrary angle [deg] to [0, 360) [deg].
+!
+! 2001-08-15, Oyvind.Breivik@dnmi.no
+! 2021-06-08, Veronica.Berglyd.Olsen@met.no : Moved from sphere.f
+! ============================================================================ !
+real pure function ang360(ang)
+
+  implicit none
+  real, intent(in) :: ang ! [deg]
+
+  ang360 = mod(ang, 360.0) - (sign(1.0,ang)-1.0)*180.0
+
+end function ang360
+
 end module sphere_vec

@@ -15,9 +15,9 @@ export FFLAGS="$(nf-config --fflags) -I/usr/lib/x86_64-linux-gnu/fortran/gfortra
 export LDFLAGS="$(nf-config --flibs)"
 
 gfortran $FLAGS $FFLAGS -c ../src/netcdf_metno_spec.f90
-gfortran $FLAGS -c ../src/debug.f90 ../src/sphere_vec.f90 ../src/sphere.f
+gfortran $FLAGS -c ../src/debug.f90 ../src/sphere_vec.f90
 gfortran $FLAGS $FFLAGS $LDFLAGS ../src/gribspec2nc.f90 \
-    debug.o sphere.o sphere_vec.o netcdf_metno_spec.o \
+    debug.o sphere_vec.o netcdf_metno_spec.o \
     -lnetcdff -leccodes_f90 -o ../gribspec2nc
 
 cd ..
